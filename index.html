@@ -54,8 +54,12 @@ body {
   line-height: 1.55;
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
-  padding-block: 20px 36px;
+  padding-block: 20px 20px;
   -webkit-font-smoothing: antialiased;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 .masthead {
@@ -89,19 +93,19 @@ body {
 .masthead-meta a { color: var(--muted); text-decoration: none; border-bottom: 1px solid var(--line); }
 .masthead-meta a:hover { color: var(--gold); border-color: var(--gold); }
 
+/* The stage fills the rest of the viewport. The ball sits dead centre, the
+   section bar floats over its left edge, and the content panel only appears
+   inside the ball once a panel has been opened. */
 .stage {
   position: relative;
-  display: grid;
-  grid-template-columns: minmax(0, 1.02fr) minmax(0, 1fr) auto;
-  gap: 24px;
-  align-items: start;
-  min-height: clamp(430px, 64vh, 700px);
+  flex: 1 1 auto;
+  min-height: 420px;
 }
 
 /* ---- ball layer ---- */
 .ball-layer {
   position: absolute;
-  inset: 0 186px 0 0;   /* stop short of the rail, which must stay readable */
+  inset: 0;
   z-index: 0;
   border-radius: 6px;
   overflow: hidden;
@@ -109,7 +113,6 @@ body {
 #ball { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
 #ball.grabbing { cursor: grabbing; }
 #ball.over-panel { cursor: pointer; }
-.ball-slot { min-width: 0; align-self: stretch; }
 
 /* dark gradient that deepens the interior once you are inside */
 .vignette {
@@ -119,15 +122,12 @@ body {
   opacity: 0;
   transition: opacity 500ms ease;
   background:
-    radial-gradient(120% 90% at 68% 42%, rgba(255, 201, 74, 0.10) 0%, rgba(255, 201, 74, 0) 46%),
+    radial-gradient(120% 90% at 50% 45%, rgba(255, 201, 74, 0.10) 0%, rgba(255, 201, 74, 0) 46%),
     radial-gradient(100% 100% at 50% 50%, rgba(0, 0, 0, 0) 38%, rgba(0, 0, 0, 0.72) 100%);
 }
 body.is-inside .vignette { opacity: 1; }
 
-/* ---- content column ---- */
-.readout { min-width: 0; position: relative; z-index: 1; }
-
-.hero-kicker, .card-kicker {
+.card-kicker {
   font-family: var(--font-mono);
   font-size: 11px;
   letter-spacing: 0.14em;
@@ -136,22 +136,18 @@ body.is-inside .vignette { opacity: 1; }
   text-shadow: 0 0 14px var(--gold-glow);
   margin-bottom: 10px;
 }
-.hero h1 {
-  font-family: var(--font-display);
-  font-size: clamp(32px, 4.8vw, 52px);
-  line-height: 0.98;
-  letter-spacing: 0.01em;
-  text-transform: uppercase;
-  text-wrap: balance;
-  margin: 0 0 14px;
-}
-.hero p { margin: 0 0 14px; max-width: 44ch; color: var(--muted); }
-.hero p strong { color: var(--fg); font-weight: 600; }
-
-/* The content panel. In this prototype it carries a dashed gold frame and a
-   corner tag so the content's place inside the ball is explicit. */
+/* The content panel, centred over the ball's lit interior. All four insets
+   plus auto margins centre it; it is hidden until the camera is inside. */
 .card {
-  position: relative;
+  position: absolute;
+  z-index: 2;
+  inset: 20px 84px 40px;
+  margin: auto;
+  max-width: 640px;
+  height: fit-content;
+  max-height: calc(100% - 60px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   background: rgba(16, 19, 24, 0.84);
   -webkit-backdrop-filter: blur(14px);
   backdrop-filter: blur(14px);
@@ -159,22 +155,18 @@ body.is-inside .vignette { opacity: 1; }
   border-radius: 10px;
   padding: 24px 22px 22px;
   box-shadow: 0 0 0 1px rgba(255, 201, 74, 0.07), 0 26px 70px rgba(0, 0, 0, 0.8);
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(0.96);
+  transition: opacity 280ms ease, transform 280ms ease, visibility 0s linear 280ms;
 }
-.card::before {
-  content: "Content panel";
-  position: absolute;
-  top: -9px;
-  left: 16px;
-  padding: 1px 8px;
-  background: var(--bg);
-  border: 1px solid var(--gold-dim);
-  border-radius: 3px;
-  font-family: var(--font-mono);
-  font-size: 9.5px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--gold);
+.card.shown {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition: opacity 280ms ease, transform 280ms ease, visibility 0s;
 }
+.card:focus { outline: none; }
 .card h2 {
   font-family: var(--font-display);
   font-size: clamp(25px, 3.3vw, 34px);
@@ -263,63 +255,51 @@ body.is-inside .vignette { opacity: 1; }
 }
 .copy-btn:hover { color: var(--gold); border-color: var(--gold); }
 
-/* ---- in-ball navigation: switch sections without coming back out ---- */
-.in-ball-nav {
+/* ---- section bar: icons only until expanded, floats over the ball ---- */
+.rail {
   position: absolute;
-  left: 14px;
-  top: 14px;          /* the layer grows with the card, so anchor to the top */
-  z-index: 2;
+  z-index: 3;
+  left: 0;
+  top: 0;
   display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 7px 9px;
-  border-radius: 999px;
+  flex-direction: column;
+  gap: 2px;
+  width: 56px;
+  padding: 6px;
+  border-radius: 12px;
   background: rgba(16, 19, 24, 0.78);
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   border: 1px solid var(--line);
-  opacity: 0;
-  transform: translateY(8px);
-  transition: opacity 320ms ease, transform 320ms ease;
-  pointer-events: none;
+  overflow: hidden;
+  transition: width 260ms ease, box-shadow 260ms ease;
 }
-body.is-inside .in-ball-nav { opacity: 1; transform: none; pointer-events: auto; }
-.pip {
+.rail.expanded { width: 196px; box-shadow: 0 18px 50px rgba(0, 0, 0, 0.6); }
+.rail-toggle {
   appearance: none;
   background: none;
   border: none;
-  padding: 6px;
-  width: 32px;
-  height: 32px;
-  display: grid;
-  place-items: center;
-  border-radius: 8px;
-  cursor: pointer;
-}
-.pip svg path { fill: none; stroke: #6A727B; stroke-width: 9; }
-.pip:hover svg path { stroke: var(--gold); }
-.pip[aria-current="true"] svg path { fill: var(--gold); stroke: var(--gold); filter: drop-shadow(0 0 5px var(--gold)); }
-.pip:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
-.nav-sep { width: 1px; height: 20px; background: var(--line); margin: 0 2px; }
-
-/* ---- rail ---- */
-.rail {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  width: 162px;
-  flex: none;
-}
-.rail-label {
+  border-radius: 7px;
+  color: var(--muted);
   font-family: var(--font-mono);
   font-size: 10px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--muted);
-  padding: 0 10px 8px;
+  text-align: left;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  min-height: 40px;
+  white-space: nowrap;
 }
+.rail-toggle:hover { color: var(--gold); background: var(--surface-2); }
+.rail-toggle:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.rail-toggle svg { flex: none; display: block; transition: transform 260ms ease; }
+.rail.expanded .rail-toggle svg { transform: rotate(180deg); }
+.tabs { display: flex; flex-direction: column; gap: 2px; }
+.rail-sep { height: 1px; background: var(--line); margin: 2px 4px 4px; }
 .tab {
   appearance: none;
   background: none;
@@ -330,22 +310,34 @@ body.is-inside .in-ball-nav { opacity: 1; transform: none; pointer-events: auto;
   font-size: 14px;
   font-weight: 600;
   text-align: left;
-  padding: 9px 10px;
+  padding: 9px 13px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   cursor: pointer;
   min-height: 44px;
+  white-space: nowrap;
 }
+.tab-label, .rail-toggle span { opacity: 0; transition: opacity 180ms ease; }
+.rail.expanded .tab-label, .rail.expanded .rail-toggle span { opacity: 1; transition-delay: 80ms; }
 .tab:hover { background: var(--surface-2); }
 .tab .pent { flex: none; display: block; }
 .tab .pent path { fill: none; stroke: #6A727B; stroke-width: 10; }
+.tab:hover .pent path { stroke: var(--gold); }
 .tab[aria-selected="true"] { background: rgba(255, 201, 74, 0.1); color: var(--gold); }
 .tab[aria-selected="true"] .pent path { fill: var(--gold); stroke: var(--gold); filter: drop-shadow(0 0 5px var(--gold)); }
 .tab:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 
+/* hint sits under the ball */
 .hintbar {
-  margin-top: 10px;
+  position: absolute;
+  z-index: 1;
+  left: 0;
+  right: 0;
+  bottom: 10px;
+  margin: 0;
+  text-align: center;
+  pointer-events: none;
   font-family: var(--font-mono);
   font-size: 11px;
   letter-spacing: 0.06em;
@@ -354,7 +346,7 @@ body.is-inside .in-ball-nav { opacity: 1; transform: none; pointer-events: auto;
 }
 
 .foot {
-  margin-top: 18px;
+  margin-top: 14px;
   padding-top: 12px;
   border-top: 1px solid var(--line);
   font-family: var(--font-mono);
@@ -367,21 +359,11 @@ body.is-inside .in-ball-nav { opacity: 1; transform: none; pointer-events: auto;
   flex-wrap: wrap;
 }
 
-@media (max-width: 1023px) {
-  .stage { grid-template-columns: minmax(0, 1fr); gap: 16px; min-height: 0; }
-  .ball-layer { position: relative; inset: auto; order: 1; width: 100%; height: clamp(260px, 42vh, 380px); }
-  .ball-slot { display: none; }
-  .rail {
-    order: 2;
-    width: auto;
-    flex-direction: row;
-    gap: 6px;
-    overflow-x: auto;
-    padding-bottom: 4px;
-  }
-  .rail-label { display: none; }
-  .tab { flex: none; white-space: nowrap; }
-  .readout { order: 3; }
+@media (max-width: 719px) {
+  /* leave the collapsed bar uncovered on the left */
+  .card { inset: 12px 0 12px 66px; max-height: calc(100% - 24px); padding: 20px 16px 18px; }
+  .hintbar { left: 56px; }
+  body.is-inside .hintbar { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
@@ -402,27 +384,21 @@ body.is-inside .in-ball-nav { opacity: 1; transform: none; pointer-events: auto;
   <div class="ball-layer">
     <canvas id="ball" aria-hidden="true"></canvas>
     <div class="vignette" aria-hidden="true"></div>
-    <div class="in-ball-nav" id="inBallNav" aria-label="Sections, inside the ball"></div>
-  </div>
-  <div class="ball-slot" id="ballSlot"></div>
-
-  <div class="readout">
-    <section class="hero" id="hero">
-      <div class="hero-kicker">Singapore &middot; Open to internships</div>
-      <h1>Data pipelines, full-stack builds, one football</h1>
-      <p><strong>Applied AI and Analytics</strong> at Nanyang Polytechnic, expected 2028. Project experience across the full data pipeline and full-stack delivery in Python, TypeScript and SQL.</p>
-      <p>Led a 4-person team on a graded SGX equity screener, and architected an event-driven AWS serverless backend solo at a hackathon.</p>
-      <p>Spin the ball and click a gold-edged panel, or pick a section from the list. The panel swings open and you drop through the hole into the ball.</p>
-    </section>
-    <section class="card" id="panelCard" role="tabpanel" tabindex="-1" hidden></section>
   </div>
 
-  <nav class="rail" role="tablist" aria-orientation="vertical" aria-label="Portfolio sections" id="rail">
-    <div class="rail-label">Sections</div>
+  <nav class="rail" id="rail" aria-label="Portfolio sections">
+    <button class="rail-toggle" type="button" id="railToggle" aria-expanded="false" aria-controls="tabs">
+      <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3 L11 8 L6 13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+      <span>Sections</span>
+    </button>
+    <div class="rail-sep"></div>
+    <div class="tabs" id="tabs" role="tablist" aria-orientation="vertical" aria-label="Portfolio sections"></div>
   </nav>
-</main>
 
-<p class="hintbar" id="hint">Drag to spin &middot; click a gold panel</p>
+  <section class="card" id="panelCard" role="tabpanel" tabindex="-1"></section>
+
+  <p class="hintbar" id="hint">Drag to spin &middot; click a gold panel</p>
+</main>
 
 <footer class="foot">
   <span id="statusLine">Outside the ball</span>
@@ -665,7 +641,6 @@ body.is-inside .in-ball-nav { opacity: 1; transform: none; pointer-events: auto;
    * 4. Scene
    * ------------------------------------------------------------------ */
   var canvas = document.getElementById('ball');
-  var slot = document.getElementById('ballSlot');
   var renderer, scene, camera, ballGroup, panels = [];
   var key, fill, ambient, bulb, readingLight, readingTarget;
 
@@ -722,7 +697,7 @@ body.is-inside .in-ball-nav { opacity: 1; transform: none; pointer-events: auto;
     // wall where the content panel sits, so the content has a lit pool behind
     // it rather than floating on flat black.
     readingTarget = new THREE.Object3D();
-    readingTarget.position.set(0.55, 0.0, -1.3);
+    readingTarget.position.set(0, 0.0, -1.3);
     scene.add(readingTarget);
     readingLight = new THREE.SpotLight(0xffd9a0, OUTSIDE_LIGHT.reading, 7, 0.55, 1, 1.2);
     readingLight.position.set(-0.3, 0.6, 0.9);
@@ -948,26 +923,16 @@ body.is-inside .in-ball-nav { opacity: 1; transform: none; pointer-events: auto;
   /* ------------------------------------------------------------------ *
    * 5. Camera framing
    * ------------------------------------------------------------------ */
-  var overlayMode = window.matchMedia('(min-width: 1024px)');
-
+  // The ball always sits in the middle of the stage.
   function frameIdle() {
     var cw = canvas.clientWidth || 1, ch = canvas.clientHeight || 1;
     var focal = (ch / 2) / Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2);
-
-    var sx = cw / 2, sy = ch / 2, box = Math.min(cw, ch) * 0.7;
-    if (overlayMode.matches) {
-      var cr = canvas.getBoundingClientRect(), sr = slot.getBoundingClientRect();
-      if (sr.width > 0) {
-        sx = sr.left - cr.left + sr.width / 2;
-        sy = sr.top - cr.top + sr.height / 2;
-        box = Math.min(sr.width, sr.height) * 0.78;
-      }
-    }
+    var box = Math.min(cw, ch) * 0.72;
     // a sphere of radius R at distance d projects to focal*R/sqrt(d^2-R^2)
     // pixels, not focal*R/d — the flat approximation renders it oversized
     var rPx = Math.max(box, 1) / 2;
     var d = Math.sqrt(Math.pow(focal * R / rPx, 2) + R * R);
-    idleCam.set((cw / 2 - sx) * d / focal, (sy - ch / 2) * d / focal, d);
+    idleCam.set(0, 0, d);
   }
 
   /* ------------------------------------------------------------------ *
@@ -1084,19 +1049,26 @@ body.is-inside .in-ball-nav { opacity: 1; transform: none; pointer-events: auto;
     });
   }
 
+  // Each step re-checks that its panel is still the one being opened, so a
+  // quick second click never lands a stale card.
   function enter(panel) {
+    if (current !== panel) return;
     setStatus('Opening ' + panel.section.label.toLowerCase());
     swing(panel, OPEN_ANGLE, 300);
     after(150, function () {
+      if (current !== panel) return;
       inside = true;
       document.body.classList.add('is-inside');
-      setHint('Inside the ball — switch sections below left, or press Esc');
+      setHint('Inside the ball — pick another section, or press Esc');
       lightsTo(INSIDE_LIGHT, 560);
       flyTo(INSIDE.clone(), 620, ease.inCubic, function () {
+        if (current !== panel) return;
         // once through, the flap is behind the viewer and only catches
         // reflections across the interior, so it is taken out of the frame
         panel.mesh.visible = false;
         setStatus('Inside · ' + panel.section.label);
+        renderCard(panel.section);
+        showCard();
         requestRender();
       });
     });
@@ -1112,18 +1084,27 @@ body.is-inside .in-ball-nav { opacity: 1; transform: none; pointer-events: auto;
     after(200, function () { swing(panel, 0, 280); });
   }
 
+  var openId = null;
+
   function openSection(id) {
-    var panel = panels.filter(function (p) { return p.section.id === id; })[0];
-    if (!panel || current === panel) return;
-
-    renderCard(panel.section);
+    var section = SECTIONS.filter(function (s) { return s.id === id; })[0];
+    if (!section || openId === id) return;
+    openId = id;
     markTab(id);
+    hideCard();
+    if (narrow.matches) setRail(false);
 
+    // no 3D: show the content straight away
+    if (!renderer) { renderCard(section); showCard(); return; }
+
+    var panel = panels.filter(function (p) { return p.section.id === id; })[0];
     if (current) {
       var prev = current;
       current = panel;
       exit(prev);
-      after(240, function () { rotateTo(panel, function () { enter(panel); }); });
+      after(240, function () {
+        if (current === panel) rotateTo(panel, function () { enter(panel); });
+      });
     } else {
       current = panel;
       rotateTo(panel, function () { enter(panel); });
@@ -1131,16 +1112,19 @@ body.is-inside .in-ball-nav { opacity: 1; transform: none; pointer-events: auto;
   }
 
   function closeSection() {
-    if (!current) return;
-    var prev = current;
-    current = null;
-    exit(prev);
+    if (!openId) return;
+    var prevId = openId;
+    openId = null;
+    hideCard();
     markTab(null);
-    document.getElementById('panelCard').hidden = true;
-    document.getElementById('hero').hidden = false;
+    if (current) {
+      var prev = current;
+      current = null;
+      exit(prev);
+    }
     setStatus('Outside the ball');
     setHint('Drag to spin · click a gold panel');
-    var btn = document.querySelector('.tab[data-id="' + prev.section.id + '"]');
+    var btn = document.querySelector('.tab[data-id="' + prevId + '"]');
     if (btn) btn.focus();
   }
 
@@ -1216,10 +1200,20 @@ body.is-inside .in-ball-nav { opacity: 1; transform: none; pointer-events: auto;
   canvas.addEventListener('pointerleave', function () { lastMove = null; setHover(null); });
 
   /* ------------------------------------------------------------------ *
-   * 9. Rail and in-ball navigation
+   * 9. Section bar
    * ------------------------------------------------------------------ */
   var rail = document.getElementById('rail');
-  var inBallNav = document.getElementById('inBallNav');
+  var tabList = document.getElementById('tabs');
+  var railToggle = document.getElementById('railToggle');
+  var narrow = window.matchMedia('(max-width: 719px)');
+
+  function setRail(open) {
+    rail.classList.toggle('expanded', open);
+    railToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+  railToggle.addEventListener('click', function () {
+    setRail(!rail.classList.contains('expanded'));
+  });
 
   SECTIONS.forEach(function (s, i) {
     var b = document.createElement('button');
@@ -1228,44 +1222,20 @@ body.is-inside .in-ball-nav { opacity: 1; transform: none; pointer-events: auto;
     b.setAttribute('role', 'tab');
     b.setAttribute('aria-selected', 'false');
     b.setAttribute('aria-controls', 'panelCard');
+    b.setAttribute('aria-label', s.label);
     b.setAttribute('data-id', s.id);
     b.id = 'tab-' + s.id;
+    b.title = s.label;
     b.tabIndex = i === 0 ? 0 : -1;
     b.innerHTML = '<svg class="pent" width="15" height="15" viewBox="0 0 100 100" aria-hidden="true">'
-      + '<path d="' + PENT_PATH + '"/></svg><span>' + s.label + '</span>';
+      + '<path d="' + PENT_PATH + '"/></svg><span class="tab-label">' + s.label + '</span>';
     b.addEventListener('click', function () { openSection(s.id); });
-    rail.appendChild(b);
-
-    var pip = document.createElement('button');
-    pip.className = 'pip';
-    pip.type = 'button';
-    pip.setAttribute('data-id', s.id);
-    pip.setAttribute('aria-current', 'false');
-    pip.title = s.label;
-    pip.setAttribute('aria-label', s.label);
-    pip.innerHTML = '<svg width="16" height="16" viewBox="0 0 100 100" aria-hidden="true">'
-      + '<path d="' + PENT_PATH + '"/></svg>';
-    pip.addEventListener('click', function () { openSection(s.id); });
-    inBallNav.appendChild(pip);
+    tabList.appendChild(b);
   });
 
-  var sep = document.createElement('span');
-  sep.className = 'nav-sep';
-  inBallNav.appendChild(sep);
+  var tabs = Array.prototype.slice.call(tabList.querySelectorAll('.tab'));
 
-  var navClose = document.createElement('button');
-  navClose.className = 'closer';
-  navClose.type = 'button';
-  navClose.setAttribute('aria-label', 'Leave the ball');
-  navClose.title = 'Leave the ball';
-  navClose.innerHTML = X_SVG;
-  navClose.addEventListener('click', closeSection);
-  inBallNav.appendChild(navClose);
-
-  var tabs = Array.prototype.slice.call(rail.querySelectorAll('.tab'));
-  var pips = Array.prototype.slice.call(inBallNav.querySelectorAll('.pip'));
-
-  rail.addEventListener('keydown', function (e) {
+  tabList.addEventListener('keydown', function (e) {
     var i = tabs.indexOf(document.activeElement);
     if (i === -1) return;
     var n = null;
@@ -1285,14 +1255,11 @@ body.is-inside .in-ball-nav { opacity: 1; transform: none; pointer-events: auto;
       t.setAttribute('aria-selected', on ? 'true' : 'false');
       t.tabIndex = on ? 0 : -1;
     });
-    pips.forEach(function (p) {
-      p.setAttribute('aria-current', p.getAttribute('data-id') === id ? 'true' : 'false');
-    });
     if (!id && tabs.length) tabs[0].tabIndex = 0;
   }
 
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape' && current) { e.preventDefault(); closeSection(); }
+    if (e.key === 'Escape' && openId) { e.preventDefault(); closeSection(); }
   });
 
   /* ------------------------------------------------------------------ *
@@ -1343,8 +1310,7 @@ body.is-inside .in-ball-nav { opacity: 1; transform: none; pointer-events: auto;
 
     card.innerHTML = html;
     card.setAttribute('aria-labelledby', 'tab-' + s.id);
-    card.hidden = false;
-    document.getElementById('hero').hidden = true;
+    card.scrollTop = 0;
     document.getElementById('closeCard').addEventListener('click', closeSection);
 
     Array.prototype.forEach.call(card.querySelectorAll('.copy-btn'), function (btn) {
@@ -1366,18 +1332,24 @@ body.is-inside .in-ball-nav { opacity: 1; transform: none; pointer-events: auto;
       });
     });
 
+  }
+
+  function showCard() {
+    card.classList.add('shown');
     card.focus({ preventScroll: true });
   }
+  function hideCard() { card.classList.remove('shown'); }
 
   /* ------------------------------------------------------------------ *
    * 11. Boot
    * ------------------------------------------------------------------ */
   function boot() {
-    if (!window.THREE) { setHint('Rail navigation only — 3D unavailable'); return; }
+    if (!window.THREE) { setHint('Use the section bar — 3D unavailable'); return; }
     try { initScene(); }
     catch (err) {
+      renderer = null;
       document.querySelector('.ball-layer').hidden = true;
-      setHint('Rail navigation only — 3D unavailable');
+      setHint('Use the section bar — 3D unavailable');
       return;
     }
     if (window.ResizeObserver) new ResizeObserver(resize).observe(canvas);
