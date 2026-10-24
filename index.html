@@ -343,6 +343,7 @@ body.is-inside .vignette { opacity: 1; }
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--muted);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
 }
 
 .foot {
@@ -692,6 +693,7 @@ body.is-inside .vignette { opacity: 1; }
     scene.add(fill);
 
     buildBall();
+    buildField();
 
     // Reading light: a warm spot thrown from behind the viewer onto the inner
     // wall where the content panel sits, so the content has a lit pool behind
@@ -706,6 +708,66 @@ body.is-inside .vignette { opacity: 1; }
 
     resize();
     requestRender();
+  }
+
+  var ORIGIN = new THREE.Vector3(0, 0, 0);
+  var CAM_DIR = new THREE.Vector3(0, 0.3, 1).normalize();
+
+  // A night pitch: mowing stripes and white markings painted on a canvas,
+  // fading into the page colour at the horizon. The ball rests on the
+  // centre spot.
+  function buildField() {
+    var SIZE = 90, PX = 2048, s = PX / SIZE;
+    var c = document.createElement('canvas');
+    c.width = c.height = PX;
+    var x = c.getContext('2d');
+    var bands = 18, bh = PX / bands;
+    for (var i = 0; i < bands; i++) {
+      x.fillStyle = i % 2 ? '#1c4519' : '#22521e';
+      x.fillRect(0, i * bh, PX, bh);
+    }
+    var mid = PX / 2;
+    x.strokeStyle = 'rgba(245, 245, 235, 0.92)';
+    x.lineWidth = 0.16 * s;
+    x.beginPath(); x.moveTo(0, mid); x.lineTo(PX, mid); x.stroke();
+    x.beginPath(); x.arc(mid, mid, 7 * s, 0, Math.PI * 2); x.stroke();
+    // penalty areas at either end of the visible pitch
+    x.strokeRect(mid - 16 * s, mid - 34 * s, 32 * s, 13 * s);
+    x.strokeRect(mid - 16 * s, mid + 21 * s, 32 * s, 13 * s);
+    x.beginPath(); x.moveTo(mid - 30 * s, mid - 34 * s); x.lineTo(mid + 30 * s, mid - 34 * s); x.stroke();
+    x.beginPath(); x.moveTo(mid - 30 * s, mid + 34 * s); x.lineTo(mid + 30 * s, mid + 34 * s); x.stroke();
+    x.beginPath(); x.moveTo(mid - 30 * s, mid - 34 * s); x.lineTo(mid - 30 * s, mid + 34 * s); x.stroke();
+    x.beginPath(); x.moveTo(mid + 30 * s, mid - 34 * s); x.lineTo(mid + 30 * s, mid + 34 * s); x.stroke();
+
+    var tex = new THREE.CanvasTexture(c);
+    tex.encoding = THREE.sRGBEncoding;
+    tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    var field = new THREE.Mesh(
+      new THREE.PlaneGeometry(SIZE, SIZE),
+      new THREE.MeshStandardMaterial({ map: tex, roughness: 0.95, metalness: 0, envMapIntensity: 0.25 })
+    );
+    field.rotation.x = -Math.PI / 2;
+    field.position.y = -R - 0.01;
+    scene.add(field);
+
+    // soft contact shadow under the ball
+    var sc = document.createElement('canvas');
+    sc.width = sc.height = 128;
+    var sx = sc.getContext('2d');
+    var g = sx.createRadialGradient(64, 64, 0, 64, 64, 64);
+    g.addColorStop(0, 'rgba(0,0,0,0.75)');
+    g.addColorStop(0.45, 'rgba(0,0,0,0.35)');
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    sx.fillStyle = g; sx.fillRect(0, 0, 128, 128);
+    var shadow = new THREE.Mesh(
+      new THREE.PlaneGeometry(4.4, 4.4),
+      new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(sc), transparent: true, depthWrite: false })
+    );
+    shadow.rotation.x = -Math.PI / 2;
+    shadow.position.y = -R;
+    scene.add(shadow);
+
+    scene.fog = new THREE.Fog(0x0C0E12, 7, 28);
   }
 
   function buildBall() {
@@ -932,7 +994,8 @@ body.is-inside .vignette { opacity: 1; }
     // pixels, not focal*R/d — the flat approximation renders it oversized
     var rPx = Math.max(box, 1) / 2;
     var d = Math.sqrt(Math.pow(focal * R / rPx, 2) + R * R);
-    idleCam.set(0, 0, d);
+    // seen from a little above, so the pitch runs back to the horizon
+    idleCam.copy(CAM_DIR).multiplyScalar(d);
   }
 
   /* ------------------------------------------------------------------ *
@@ -967,6 +1030,8 @@ body.is-inside .vignette { opacity: 1; }
       busy = true;
     }
 
+    camera.lookAt(ORIGIN);
+    camera.updateMatrixWorld();
     if (pendingPick) { pendingPick = false; doHoverPick(); }
     renderer.render(scene, camera);
     if (busy) requestRender();
