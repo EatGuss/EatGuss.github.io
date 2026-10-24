@@ -48,8 +48,9 @@
 html { background: var(--bg); }
 body { background: transparent; }
 
-/* interactive backdrop: a field of grass along the bottom of the page that
-   sways in the wind, parts around the pointer and gusts on each click */
+/* interactive backdrop: grass seen from straight above, filling the page.
+   Blades lean with the wind, brush aside under the pointer and flatten
+   outward from each click. */
 #bgfx {
   position: fixed;
   inset: 0;
@@ -98,6 +99,7 @@ body {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
   display: flex;
   gap: 16px;
   flex-wrap: wrap;
@@ -115,6 +117,20 @@ body {
 }
 
 /* ---- ball layer ---- */
+/* the ball's shadow on the grass, cast down and left from the key light;
+   resize() sizes it to match the ball */
+.ball-shadow {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-56%, -42%);
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(0, 0, 0, 0.62), rgba(0, 0, 0, 0.35) 60%, rgba(0, 0, 0, 0));
+  pointer-events: none;
+  transition: opacity 400ms ease;
+}
+body.is-inside .ball-shadow { opacity: 0; }
+
 .ball-layer {
   position: absolute;
   inset: 0;
@@ -122,7 +138,7 @@ body {
   border-radius: 6px;
   overflow: hidden;
 }
-#ball { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
+#ball { position: relative; display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
 #ball.grabbing { cursor: grabbing; }
 #ball.over-panel { cursor: pointer; }
 
@@ -397,6 +413,7 @@ body.is-inside .vignette { opacity: 1; }
 
 <main class="stage">
   <div class="ball-layer">
+    <div class="ball-shadow" aria-hidden="true"></div>
     <canvas id="ball" aria-hidden="true"></canvas>
     <div class="vignette" aria-hidden="true"></div>
   </div>
@@ -426,16 +443,12 @@ body.is-inside .vignette { opacity: 1; }
   var cv = document.getElementById('bgfx');
   var ctx = cv.getContext('2d');
   var still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  // back rows are short, dark and dense; front rows tall and lit
-  var ROWS = [
-    { depth: 0.00, ground: '#0b1a0e', color: '#163019', tip: '#24452a', h: 40, w: 3.2 },
-    { depth: 0.25, ground: '#0d1f10', color: '#1a3a1e', tip: '#2c5530', h: 58, w: 3.8 },
-    { depth: 0.50, ground: '#0f2412', color: '#1f4523', tip: '#356537', h: 80, w: 4.6 },
-    { depth: 0.75, ground: '#112914', color: '#245028', tip: '#3f763e', h: 104, w: 5.4 },
-    { depth: 1.00, ground: '#132e16', color: '#2a5c2d', tip: '#4a8746', h: 130, w: 6.4 }
-  ];
-  var REACH = 130;
-  var w = 0, h = 0, top = 0, blades = [];
+  // shades from the shadowed undergrowth up to sunlit tips; blades are
+  // drawn darkest first so the lighter ones sit on top
+  var SHADES = ['#13301a', '#1a3f20', '#225026', '#2b602d', '#377336'];
+  var REACH = 120;
+  var w = 0, h = 0, n = 0;
+  var bx, by, len, ox, oy, lx, ly, shade, order;
   var ptr = { x: -9999, y: -9999 }, gusts = [];
 
   function size() {
@@ -443,82 +456,91 @@ body.is-inside .vignette { opacity: 1; }
     w = window.innerWidth; h = window.innerHeight;
     cv.width = w * dpr; cv.height = h * dpr;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    var band = Math.min(h * 0.32, 260);
-    top = h - band;
-    var scale = w < 720 ? 0.75 : 1;
-    blades = ROWS.map(function (row) {
-      var list = [], gap = row.w * 1.25;
-      var y = top + band * (0.22 + row.depth * 0.78);
-      for (var x = -10; x < w + 10; x += gap * (0.6 + Math.random() * 0.8)) {
-        list.push({
-          x: x, y: y + 2 + Math.random() * 10,
-          h: row.h * scale * (0.65 + Math.random() * 0.6),
-          w: row.w * (0.8 + Math.random() * 0.4),
-          phase: Math.random() * 6.28, bend: 0
-        });
+    var gap = w < 720 ? 7 : 8.5;
+    n = Math.ceil((w + 20) / gap) * Math.ceil((h + 20) / gap);
+    bx = new Float32Array(n); by = new Float32Array(n); len = new Float32Array(n);
+    ox = new Float32Array(n); oy = new Float32Array(n);
+    lx = new Float32Array(n); ly = new Float32Array(n);
+    shade = new Uint8Array(n);
+    var i = 0;
+    for (var y = -10; y < h + 10; y += gap) {
+      for (var x = -10; x < w + 10; x += gap) {
+        if (i >= n) break;
+        bx[i] = x + (Math.random() - 0.5) * gap;
+        by[i] = y + (Math.random() - 0.5) * gap;
+        len[i] = 7 + Math.random() * 9;
+        // every blade has its own natural lean
+        var a = Math.random() * 6.2832, m = 0.25 + Math.random() * 0.35;
+        ox[i] = Math.cos(a) * m; oy[i] = Math.sin(a) * m;
+        lx[i] = ox[i]; ly[i] = oy[i];
+        // slow patches of lighter and darker growth
+        var patch = Math.sin(x * 0.011 + Math.sin(y * 0.007) * 2) * 0.5 + Math.sin(y * 0.013 - x * 0.004) * 0.5;
+        var sh = Math.floor(Math.random() * 3.2 + (patch + 1) * 0.9);
+        shade[i] = Math.max(0, Math.min(SHADES.length - 1, sh));
+        i++;
       }
-      return list;
-    });
-    if (still) draw(0, 0);
+    }
+    n = i;
+    order = [];
+    for (var s = 0; s < SHADES.length; s++) order.push([]);
+    for (var k = 0; k < n; k++) order[shade[k]].push(k);
+    if (still) draw(0, 1);
   }
 
   function draw(t, dt) {
-    var sky = ctx.createLinearGradient(0, 0, 0, h);
-    sky.addColorStop(0, '#0C0E12');
-    sky.addColorStop(0.62, '#0E1316');
-    sky.addColorStop(1, '#0B1A0F');
-    ctx.fillStyle = sky;
+    ctx.fillStyle = '#0c1d10';
     ctx.fillRect(0, 0, w, h);
 
-    var time = t / 1000;
-    var ease = Math.min(1, dt * 8);
-    for (var r = 0; r < ROWS.length; r++) {
-      var row = ROWS[r], list = blades[r];
-      // ground under this row hides the roots of the rows behind it
-      if (list.length) {
-        ctx.fillStyle = row.ground;
-        ctx.fillRect(0, list[0].y - 4, w, h);
-      }
-      // the wind moves left to right as long rolling waves
-      ctx.fillStyle = row.color;
+    var time = t / 1000, ease = still ? 1 : Math.min(1, dt * 7);
+    ctx.lineCap = 'round';
+    for (var s = 0; s < SHADES.length; s++) {
+      var list = order[s];
+      ctx.strokeStyle = SHADES[s];
+      ctx.lineWidth = 2.6 - s * 0.25;
       ctx.beginPath();
-      for (var i = 0; i < list.length; i++) {
-        var b = list[i];
-        var wind = still ? 0.08 :
-          0.16 + 0.14 * Math.sin(time * 1.4 - b.x * 0.006 + b.phase * 0.15)
-               + 0.06 * Math.sin(time * 3.1 + b.phase);
+      for (var j = 0; j < list.length; j++) {
+        var i = list[j], x = bx[i], y = by[i];
+        // wind blows left to right in broad waves, with a little cross-draft
+        var tx = ox[i], ty = oy[i];
+        if (!still) {
+          var wave = Math.sin(time * 1.1 - x * 0.006 + y * 0.002);
+          tx += 0.3 + 0.35 * wave + 0.08 * Math.sin(time * 3 + i);
+          ty += 0.12 * Math.sin(time * 0.8 + x * 0.004 - y * 0.009);
+        }
         for (var g = 0; g < gusts.length; g++) {
-          var gd = b.x - gusts[g].x, front = gusts[g].r;
-          var off = Math.abs(Math.abs(gd) - front);
-          if (off < 110) wind += (gd < 0 ? -1 : 1) * (1 - off / 110) * 0.9 * gusts[g].a;
+          var gx = x - gusts[g].x, gy = y - gusts[g].y;
+          var gd = Math.sqrt(gx * gx + gy * gy) || 1;
+          var off = Math.abs(gd - gusts[g].r);
+          if (off < 70) {
+            var f = (1 - off / 70) * 1.4 * gusts[g].a;
+            tx += gx / gd * f; ty += gy / gd * f;
+          }
         }
-        // blades lean away from a pointer passing through them
-        var dx = b.x - ptr.x, dy = ptr.y - (b.y - b.h * 0.5);
-        if (Math.abs(dx) < REACH && Math.abs(dy) < b.h * 0.9 + 40) {
-          wind += (dx < 0 ? -1 : 1) * (1 - Math.abs(dx) / REACH) * 1.1;
+        // a pointer brushing through pushes the blades aside
+        var dx = x - ptr.x, dy = y - ptr.y;
+        if (dx > -REACH && dx < REACH && dy > -REACH && dy < REACH) {
+          var d = Math.sqrt(dx * dx + dy * dy) || 1;
+          if (d < REACH) {
+            var p = (1 - d / REACH) * 1.6;
+            tx += dx / d * p; ty += dy / d * p;
+          }
         }
-        b.bend += (wind - b.bend) * (still ? 1 : ease);
-        var bend = Math.max(-1.3, Math.min(1.3, b.bend));
-        var tx = b.x + Math.sin(bend) * b.h, ty = b.y - Math.cos(bend) * b.h;
-        var cx = b.x + Math.sin(bend * 0.5) * b.h * 0.5, cy = b.y - b.h * 0.55;
-        ctx.moveTo(b.x - b.w / 2, b.y);
-        ctx.quadraticCurveTo(cx, cy, tx, ty);
-        ctx.quadraticCurveTo(cx, cy, b.x + b.w / 2, b.y);
-        b.tx = tx; b.ty = ty;
-      }
-      ctx.fill();
-      // lighter tips catch the light
-      ctx.strokeStyle = row.tip;
-      ctx.lineWidth = row.w * 0.35;
-      ctx.lineCap = 'round';
-      ctx.beginPath();
-      for (var j = 0; j < list.length; j += 2) {
-        var c = list[j];
-        ctx.moveTo(c.tx + (c.x - c.tx) * 0.18, c.ty + (c.y - c.ty) * 0.18);
-        ctx.lineTo(c.tx, c.ty);
+        lx[i] += (tx - lx[i]) * ease;
+        ly[i] += (ty - ly[i]) * ease;
+        var L = len[i] * (0.35 + Math.min(1.2, Math.sqrt(lx[i] * lx[i] + ly[i] * ly[i])));
+        var m = Math.sqrt(lx[i] * lx[i] + ly[i] * ly[i]) || 1;
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + lx[i] / m * L, y + ly[i] / m * L);
       }
       ctx.stroke();
     }
+
+    // keep the page dark at the edges and under the header
+    var v = ctx.createRadialGradient(w / 2, h * 0.55, Math.min(w, h) * 0.25, w / 2, h * 0.55, Math.max(w, h) * 0.8);
+    v.addColorStop(0, 'rgba(8, 10, 12, 0)');
+    v.addColorStop(1, 'rgba(8, 10, 12, 0.78)');
+    ctx.fillStyle = v;
+    ctx.fillRect(0, 0, w, h);
   }
 
   var last = 0;
@@ -526,8 +548,8 @@ body.is-inside .vignette { opacity: 1; }
     var dt = last ? Math.min((t - last) / 1000, 0.1) : 0;
     last = t;
     for (var i = gusts.length - 1; i >= 0; i--) {
-      gusts[i].r += dt * 600;
-      gusts[i].a -= dt * 0.55;
+      gusts[i].r += dt * 520;
+      gusts[i].a -= dt * 0.7;
       if (gusts[i].a <= 0) gusts.splice(i, 1);
     }
     draw(t, dt);
@@ -538,7 +560,7 @@ body.is-inside .vignette { opacity: 1; }
   if (!still) {
     window.addEventListener('pointermove', function (e) { ptr.x = e.clientX; ptr.y = e.clientY; }, { passive: true });
     window.addEventListener('pointerdown', function (e) {
-      gusts.push({ x: e.clientX, r: 0, a: 1 });
+      gusts.push({ x: e.clientX, y: e.clientY, r: 0, a: 1 });
     }, { passive: true });
     document.documentElement.addEventListener('pointerleave', function () { ptr.x = ptr.y = -9999; });
   }
@@ -782,6 +804,7 @@ body.is-inside .vignette { opacity: 1; }
    * 4. Scene
    * ------------------------------------------------------------------ */
   var canvas = document.getElementById('ball');
+  var shadowEl = document.querySelector('.ball-shadow');
   var renderer, scene, camera, ballGroup, panels = [];
   var key, fill, ambient, bulb, readingLight, readingTarget;
 
@@ -1124,6 +1147,8 @@ body.is-inside .vignette { opacity: 1; }
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
     frameIdle();
+    var sp = Math.min(w, h) * 0.8 + 'px';
+    shadowEl.style.width = sp; shadowEl.style.height = sp;
     if (!current && tweens.length === 0) camera.position.copy(idleCam);
     requestRender();
   }
