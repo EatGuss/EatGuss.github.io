@@ -142,16 +142,20 @@ body.is-inside .ball-shadow { opacity: 0; }
 #ball.grabbing { cursor: grabbing; }
 #ball.over-panel { cursor: pointer; }
 
-/* dark gradient that deepens the interior once you are inside */
+/* once inside, the interior is washed over with a dark-to-light gradient,
+   near black at the top easing to slate at the bottom; the ball's facets
+   still show faintly through it */
 .vignette {
   position: absolute;
+  z-index: 1;
   inset: 0;
   pointer-events: none;
   opacity: 0;
   transition: opacity 500ms ease;
-  background:
-    radial-gradient(120% 90% at 50% 45%, rgba(255, 201, 74, 0.10) 0%, rgba(255, 201, 74, 0) 46%),
-    radial-gradient(100% 100% at 50% 50%, rgba(0, 0, 0, 0) 38%, rgba(0, 0, 0, 0.72) 100%);
+  background: linear-gradient(180deg,
+    rgba(6, 8, 10, 0.97) 0%,
+    rgba(14, 17, 21, 0.93) 45%,
+    rgba(36, 42, 50, 0.88) 100%);
 }
 body.is-inside .vignette { opacity: 1; }
 
@@ -809,7 +813,7 @@ body.is-inside .vignette { opacity: 1; }
   var key, fill, ambient, bulb, readingLight, readingTarget;
 
   var OUTSIDE_LIGHT = { key: 1.5, fill: 0.34, ambient: 0.16, bulb: 0.55, reading: 0 };
-  var INSIDE_LIGHT = { key: 0.1, fill: 0.03, ambient: 0.04, bulb: 0.3, reading: 7.5 };
+  var INSIDE_LIGHT = { key: 0.1, fill: 0.03, ambient: 0.04, bulb: 0.3, reading: 3 };
 
   var INSET = 0.016;
   var LINER = 0.962;
