@@ -6,4 +6,4 @@ camera inside the ball, where the content sits.
 
 Built with three.js. Single self-contained HTML file, no build step.
 
-Live: https://eatguss.github.io/EgusLee.github.io/
+Live: https://eatguss.github.io
