@@ -7,7 +7,7 @@
 <meta property="og:title" content="Egus Lee">
 <meta property="og:description" content="Applied AI and Analytics student at Nanyang Polytechnic. Open to internships in data analytics, machine learning or software engineering.">
 <meta property="og:type" content="website">
-<meta name="theme-color" content="#3A0509">
+<meta name="theme-color" content="#0C0E12">
 <style>
   /* Base reset — the artifact host supplied this; a standalone page needs it. */
   :root {
@@ -45,11 +45,11 @@
 
 * { box-sizing: border-box; }
 
-html { background: #3A0509; }
+html { background: var(--bg); }
 body { background: transparent; }
 
-/* interactive backdrop: a dot grid on deep red that lights up gold around
-   the pointer and ripples outward from each click */
+/* interactive backdrop: a field of grass along the bottom of the page that
+   sways in the wind, parts around the pointer and gusts on each click */
 #bgfx {
   position: fixed;
   inset: 0;
@@ -370,6 +370,7 @@ body.is-inside .vignette { opacity: 1; }
   justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
 }
 
 @media (max-width: 719px) {
@@ -425,64 +426,98 @@ body.is-inside .vignette { opacity: 1; }
   var cv = document.getElementById('bgfx');
   var ctx = cv.getContext('2d');
   var still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  var GAP = 30, REACH = 190;
-  var w = 0, h = 0, dpr = 1, dots = [];
-  var ptr = { x: -9999, y: -9999 }, eased = { x: -9999, y: -9999 };
-  var ripples = [];
+  // back rows are short, dark and dense; front rows tall and lit
+  var ROWS = [
+    { depth: 0.00, ground: '#0b1a0e', color: '#163019', tip: '#24452a', h: 40, w: 3.2 },
+    { depth: 0.25, ground: '#0d1f10', color: '#1a3a1e', tip: '#2c5530', h: 58, w: 3.8 },
+    { depth: 0.50, ground: '#0f2412', color: '#1f4523', tip: '#356537', h: 80, w: 4.6 },
+    { depth: 0.75, ground: '#112914', color: '#245028', tip: '#3f763e', h: 104, w: 5.4 },
+    { depth: 1.00, ground: '#132e16', color: '#2a5c2d', tip: '#4a8746', h: 130, w: 6.4 }
+  ];
+  var REACH = 130;
+  var w = 0, h = 0, top = 0, blades = [];
+  var ptr = { x: -9999, y: -9999 }, gusts = [];
 
   function size() {
-    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
     w = window.innerWidth; h = window.innerHeight;
     cv.width = w * dpr; cv.height = h * dpr;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    dots = [];
-    for (var y = GAP / 2; y < h + GAP; y += GAP) {
-      var odd = Math.round(y / GAP) % 2;
-      for (var x = odd ? GAP : GAP / 2; x < w + GAP; x += GAP) dots.push(x, y);
-    }
-    if (still) draw(0);
+    var band = Math.min(h * 0.32, 260);
+    top = h - band;
+    var scale = w < 720 ? 0.75 : 1;
+    blades = ROWS.map(function (row) {
+      var list = [], gap = row.w * 1.25;
+      var y = top + band * (0.22 + row.depth * 0.78);
+      for (var x = -10; x < w + 10; x += gap * (0.6 + Math.random() * 0.8)) {
+        list.push({
+          x: x, y: y + 2 + Math.random() * 10,
+          h: row.h * scale * (0.65 + Math.random() * 0.6),
+          w: row.w * (0.8 + Math.random() * 0.4),
+          phase: Math.random() * 6.28, bend: 0
+        });
+      }
+      return list;
+    });
+    if (still) draw(0, 0);
   }
 
-  function draw(t) {
-    var g = ctx.createRadialGradient(w * 0.5, h * 0.45, 0, w * 0.5, h * 0.45, Math.max(w, h) * 0.75);
-    g.addColorStop(0, '#8E1019');
-    g.addColorStop(0.55, '#5A0A10');
-    g.addColorStop(1, '#2A0407');
-    ctx.fillStyle = g;
+  function draw(t, dt) {
+    var sky = ctx.createLinearGradient(0, 0, 0, h);
+    sky.addColorStop(0, '#0C0E12');
+    sky.addColorStop(0.62, '#0E1316');
+    sky.addColorStop(1, '#0B1A0F');
+    ctx.fillStyle = sky;
     ctx.fillRect(0, 0, w, h);
 
-    // soft glow that trails the pointer
-    if (eased.x > -999) {
-      var glow = ctx.createRadialGradient(eased.x, eased.y, 0, eased.x, eased.y, REACH * 1.6);
-      glow.addColorStop(0, 'rgba(255, 140, 60, 0.22)');
-      glow.addColorStop(1, 'rgba(255, 140, 60, 0)');
-      ctx.fillStyle = glow;
-      ctx.fillRect(0, 0, w, h);
-    }
-
-    var wave = still ? 0 : t / 1000;
-    for (var i = 0; i < dots.length; i += 2) {
-      var x = dots[i], y = dots[i + 1];
-      var k = 0;
-      var dx = x - eased.x, dy = y - eased.y;
-      var d = Math.sqrt(dx * dx + dy * dy);
-      if (d < REACH) k = 1 - d / REACH;
-      for (var r = 0; r < ripples.length; r++) {
-        var rp = ripples[r];
-        var rd = Math.abs(Math.hypot(x - rp.x, y - rp.y) - rp.r);
-        if (rd < 40) k = Math.max(k, (1 - rd / 40) * rp.a);
+    var time = t / 1000;
+    var ease = Math.min(1, dt * 8);
+    for (var r = 0; r < ROWS.length; r++) {
+      var row = ROWS[r], list = blades[r];
+      // ground under this row hides the roots of the rows behind it
+      if (list.length) {
+        ctx.fillStyle = row.ground;
+        ctx.fillRect(0, list[0].y - 4, w, h);
       }
-      // dots near the pointer are pushed gently outward
-      var push = k * 7;
-      var px = d > 0 ? x + dx / d * push : x, py = d > 0 ? y + dy / d * push : y;
-      var idle = 0.5 + 0.5 * Math.sin(wave * 1.2 + x * 0.012 + y * 0.018);
-      var rad = 1.1 + idle * 0.5 + k * 2.4;
-      ctx.fillStyle = k > 0.02
-        ? 'rgba(255, ' + Math.round(110 + 91 * k) + ', ' + Math.round(90 - 16 * k) + ', ' + (0.3 + 0.7 * k) + ')'
-        : 'rgba(255, 110, 100, ' + (0.16 + idle * 0.12) + ')';
+      // the wind moves left to right as long rolling waves
+      ctx.fillStyle = row.color;
       ctx.beginPath();
-      ctx.arc(px, py, rad, 0, 6.2832);
+      for (var i = 0; i < list.length; i++) {
+        var b = list[i];
+        var wind = still ? 0.08 :
+          0.16 + 0.14 * Math.sin(time * 1.4 - b.x * 0.006 + b.phase * 0.15)
+               + 0.06 * Math.sin(time * 3.1 + b.phase);
+        for (var g = 0; g < gusts.length; g++) {
+          var gd = b.x - gusts[g].x, front = gusts[g].r;
+          var off = Math.abs(Math.abs(gd) - front);
+          if (off < 110) wind += (gd < 0 ? -1 : 1) * (1 - off / 110) * 0.9 * gusts[g].a;
+        }
+        // blades lean away from a pointer passing through them
+        var dx = b.x - ptr.x, dy = ptr.y - (b.y - b.h * 0.5);
+        if (Math.abs(dx) < REACH && Math.abs(dy) < b.h * 0.9 + 40) {
+          wind += (dx < 0 ? -1 : 1) * (1 - Math.abs(dx) / REACH) * 1.1;
+        }
+        b.bend += (wind - b.bend) * (still ? 1 : ease);
+        var bend = Math.max(-1.3, Math.min(1.3, b.bend));
+        var tx = b.x + Math.sin(bend) * b.h, ty = b.y - Math.cos(bend) * b.h;
+        var cx = b.x + Math.sin(bend * 0.5) * b.h * 0.5, cy = b.y - b.h * 0.55;
+        ctx.moveTo(b.x - b.w / 2, b.y);
+        ctx.quadraticCurveTo(cx, cy, tx, ty);
+        ctx.quadraticCurveTo(cx, cy, b.x + b.w / 2, b.y);
+        b.tx = tx; b.ty = ty;
+      }
       ctx.fill();
+      // lighter tips catch the light
+      ctx.strokeStyle = row.tip;
+      ctx.lineWidth = row.w * 0.35;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      for (var j = 0; j < list.length; j += 2) {
+        var c = list[j];
+        ctx.moveTo(c.tx + (c.x - c.tx) * 0.18, c.ty + (c.y - c.ty) * 0.18);
+        ctx.lineTo(c.tx, c.ty);
+      }
+      ctx.stroke();
     }
   }
 
@@ -490,27 +525,22 @@ body.is-inside .vignette { opacity: 1; }
   function loop(t) {
     var dt = last ? Math.min((t - last) / 1000, 0.1) : 0;
     last = t;
-    eased.x += (ptr.x - eased.x) * Math.min(1, dt * 9);
-    eased.y += (ptr.y - eased.y) * Math.min(1, dt * 9);
-    for (var i = ripples.length - 1; i >= 0; i--) {
-      ripples[i].r += dt * 520;
-      ripples[i].a -= dt * 0.8;
-      if (ripples[i].a <= 0) ripples.splice(i, 1);
+    for (var i = gusts.length - 1; i >= 0; i--) {
+      gusts[i].r += dt * 600;
+      gusts[i].a -= dt * 0.55;
+      if (gusts[i].a <= 0) gusts.splice(i, 1);
     }
-    draw(t);
+    draw(t, dt);
     requestAnimationFrame(loop);
   }
 
   window.addEventListener('resize', size);
   if (!still) {
-    window.addEventListener('pointermove', function (e) {
-      if (eased.x < -999) { eased.x = e.clientX; eased.y = e.clientY; }
-      ptr.x = e.clientX; ptr.y = e.clientY;
-    }, { passive: true });
+    window.addEventListener('pointermove', function (e) { ptr.x = e.clientX; ptr.y = e.clientY; }, { passive: true });
     window.addEventListener('pointerdown', function (e) {
-      ripples.push({ x: e.clientX, y: e.clientY, r: 0, a: 1 });
+      gusts.push({ x: e.clientX, r: 0, a: 1 });
     }, { passive: true });
-    document.documentElement.addEventListener('pointerleave', function () { ptr.x = ptr.y = -9999; eased.x = eased.y = -9999; });
+    document.documentElement.addEventListener('pointerleave', function () { ptr.x = ptr.y = -9999; });
   }
   size();
   if (!still) requestAnimationFrame(loop);
@@ -810,7 +840,7 @@ body.is-inside .vignette { opacity: 1; }
     readingTarget = new THREE.Object3D();
     readingTarget.position.set(0, 0.0, -1.3);
     scene.add(readingTarget);
-    readingLight = new THREE.SpotLight(0xff8a7a, OUTSIDE_LIGHT.reading, 7, 0.55, 1, 1.2);
+    readingLight = new THREE.SpotLight(0xffd9a0, OUTSIDE_LIGHT.reading, 7, 0.55, 1, 1.2);
     readingLight.position.set(-0.3, 0.6, 0.9);
     readingLight.target = readingTarget;
     scene.add(readingLight);
@@ -848,11 +878,11 @@ body.is-inside .vignette { opacity: 1; }
 
     // There are no shadow maps, so the key light reaches the interior as if
     // the shell were not there, and sRGB output lifts dark values hard. The
-    // liner colour is therefore a deep red, kept dark in linear terms.
+    // liner colour is therefore set near-black in linear terms.
     ballGroup.add(new THREE.Mesh(geomFrom(linerArr),
       new THREE.MeshStandardMaterial({
-        color: 0x090001, roughness: 0.96, metalness: 0,
-        emissive: new THREE.Color(0x070000),
+        color: 0x02030A, roughness: 0.96, metalness: 0,
+        emissive: new THREE.Color(0x03040A),
         envMapIntensity: 0,
         side: THREE.BackSide
       })));
@@ -1006,8 +1036,8 @@ body.is-inside .vignette { opacity: 1; }
     var backing = new THREE.Mesh(
       new THREE.ShapeGeometry(new THREE.Shape(ring)),
       new THREE.MeshStandardMaterial({
-        color: 0x090001, roughness: 0.96, metalness: 0,
-        emissive: new THREE.Color(0x070000),
+        color: 0x02030A, roughness: 0.96, metalness: 0,
+        emissive: new THREE.Color(0x03040A),
         envMapIntensity: 0,
         side: THREE.BackSide
       })
