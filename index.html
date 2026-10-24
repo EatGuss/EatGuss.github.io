@@ -848,11 +848,11 @@ body.is-inside .vignette { opacity: 1; }
 
     // There are no shadow maps, so the key light reaches the interior as if
     // the shell were not there, and sRGB output lifts dark values hard. The
-    // liner colour is therefore set near-black in linear terms.
+    // liner colour is therefore a deep red, kept dark in linear terms.
     ballGroup.add(new THREE.Mesh(geomFrom(linerArr),
       new THREE.MeshStandardMaterial({
-        color: 0x02030A, roughness: 0.96, metalness: 0,
-        emissive: new THREE.Color(0x03040A),
+        color: 0x170103, roughness: 0.96, metalness: 0,
+        emissive: new THREE.Color(0x0C0001),
         envMapIntensity: 0,
         side: THREE.BackSide
       })));
@@ -1006,8 +1006,8 @@ body.is-inside .vignette { opacity: 1; }
     var backing = new THREE.Mesh(
       new THREE.ShapeGeometry(new THREE.Shape(ring)),
       new THREE.MeshStandardMaterial({
-        color: 0x02030A, roughness: 0.96, metalness: 0,
-        emissive: new THREE.Color(0x03040A),
+        color: 0x170103, roughness: 0.96, metalness: 0,
+        emissive: new THREE.Color(0x0C0001),
         envMapIntensity: 0,
         side: THREE.BackSide
       })
