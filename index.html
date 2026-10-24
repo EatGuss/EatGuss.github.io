@@ -155,8 +155,21 @@ body.is-inside .ball-shadow { opacity: 0; }
   background: linear-gradient(180deg,
     rgba(6, 8, 10, 0.97) 0%,
     rgba(14, 17, 21, 0.93) 45%,
-    rgba(36, 42, 50, 0.88) 100%);
+    rgba(36, 42, 50, 0.88) 100%) fixed;
 }
+
+/* the same gradient across the whole page while inside, so the header and
+   footer match the interior; both are pinned to the viewport so they line up */
+.inside-wash {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 500ms ease;
+  background: linear-gradient(180deg, #06080A 0%, #0E1115 45%, #242A32 100%);
+}
+body.is-inside .inside-wash { opacity: 1; }
 body.is-inside .vignette { opacity: 1; }
 
 .card-kicker {
@@ -406,6 +419,7 @@ body.is-inside .vignette { opacity: 1; }
 </head>
 <body>
 <canvas id="bgfx" aria-hidden="true"></canvas>
+<div class="inside-wash" aria-hidden="true"></div>
 <header class="masthead">
   <div class="wordmark">Egus&nbsp;Lee</div>
   <div class="masthead-meta">
