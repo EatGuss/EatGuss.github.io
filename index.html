@@ -7,7 +7,7 @@
 <meta property="og:title" content="Egus Lee">
 <meta property="og:description" content="Applied AI and Analytics student at Nanyang Polytechnic. Open to internships in data analytics, machine learning or software engineering.">
 <meta property="og:type" content="website">
-<meta name="theme-color" content="#0C0E12">
+<meta name="theme-color" content="#3A0509">
 <style>
   /* Base reset — the artifact host supplied this; a standalone page needs it. */
   :root {
@@ -45,7 +45,19 @@
 
 * { box-sizing: border-box; }
 
-html, body { background: var(--bg); }
+html { background: #3A0509; }
+body { background: transparent; }
+
+/* interactive backdrop: a dot grid on deep red that lights up gold around
+   the pointer and ripples outward from each click */
+#bgfx {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  pointer-events: none;
+}
 
 body {
   color: var(--fg);
@@ -372,6 +384,7 @@ body.is-inside .vignette { opacity: 1; }
 </style>
 </head>
 <body>
+<canvas id="bgfx" aria-hidden="true"></canvas>
 <header class="masthead">
   <div class="wordmark">Egus&nbsp;Lee</div>
   <div class="masthead-meta">
@@ -406,6 +419,103 @@ body.is-inside .vignette { opacity: 1; }
 </footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function () {
+  'use strict';
+  var cv = document.getElementById('bgfx');
+  var ctx = cv.getContext('2d');
+  var still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var GAP = 30, REACH = 190;
+  var w = 0, h = 0, dpr = 1, dots = [];
+  var ptr = { x: -9999, y: -9999 }, eased = { x: -9999, y: -9999 };
+  var ripples = [];
+
+  function size() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    w = window.innerWidth; h = window.innerHeight;
+    cv.width = w * dpr; cv.height = h * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    dots = [];
+    for (var y = GAP / 2; y < h + GAP; y += GAP) {
+      var odd = Math.round(y / GAP) % 2;
+      for (var x = odd ? GAP : GAP / 2; x < w + GAP; x += GAP) dots.push(x, y);
+    }
+    if (still) draw(0);
+  }
+
+  function draw(t) {
+    var g = ctx.createRadialGradient(w * 0.5, h * 0.45, 0, w * 0.5, h * 0.45, Math.max(w, h) * 0.75);
+    g.addColorStop(0, '#8E1019');
+    g.addColorStop(0.55, '#5A0A10');
+    g.addColorStop(1, '#2A0407');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, w, h);
+
+    // soft glow that trails the pointer
+    if (eased.x > -999) {
+      var glow = ctx.createRadialGradient(eased.x, eased.y, 0, eased.x, eased.y, REACH * 1.6);
+      glow.addColorStop(0, 'rgba(255, 140, 60, 0.22)');
+      glow.addColorStop(1, 'rgba(255, 140, 60, 0)');
+      ctx.fillStyle = glow;
+      ctx.fillRect(0, 0, w, h);
+    }
+
+    var wave = still ? 0 : t / 1000;
+    for (var i = 0; i < dots.length; i += 2) {
+      var x = dots[i], y = dots[i + 1];
+      var k = 0;
+      var dx = x - eased.x, dy = y - eased.y;
+      var d = Math.sqrt(dx * dx + dy * dy);
+      if (d < REACH) k = 1 - d / REACH;
+      for (var r = 0; r < ripples.length; r++) {
+        var rp = ripples[r];
+        var rd = Math.abs(Math.hypot(x - rp.x, y - rp.y) - rp.r);
+        if (rd < 40) k = Math.max(k, (1 - rd / 40) * rp.a);
+      }
+      // dots near the pointer are pushed gently outward
+      var push = k * 7;
+      var px = d > 0 ? x + dx / d * push : x, py = d > 0 ? y + dy / d * push : y;
+      var idle = 0.5 + 0.5 * Math.sin(wave * 1.2 + x * 0.012 + y * 0.018);
+      var rad = 1.1 + idle * 0.5 + k * 2.4;
+      ctx.fillStyle = k > 0.02
+        ? 'rgba(255, ' + Math.round(110 + 91 * k) + ', ' + Math.round(90 - 16 * k) + ', ' + (0.3 + 0.7 * k) + ')'
+        : 'rgba(255, 110, 100, ' + (0.16 + idle * 0.12) + ')';
+      ctx.beginPath();
+      ctx.arc(px, py, rad, 0, 6.2832);
+      ctx.fill();
+    }
+  }
+
+  var last = 0;
+  function loop(t) {
+    var dt = last ? Math.min((t - last) / 1000, 0.1) : 0;
+    last = t;
+    eased.x += (ptr.x - eased.x) * Math.min(1, dt * 9);
+    eased.y += (ptr.y - eased.y) * Math.min(1, dt * 9);
+    for (var i = ripples.length - 1; i >= 0; i--) {
+      ripples[i].r += dt * 520;
+      ripples[i].a -= dt * 0.8;
+      if (ripples[i].a <= 0) ripples.splice(i, 1);
+    }
+    draw(t);
+    requestAnimationFrame(loop);
+  }
+
+  window.addEventListener('resize', size);
+  if (!still) {
+    window.addEventListener('pointermove', function (e) {
+      if (eased.x < -999) { eased.x = e.clientX; eased.y = e.clientY; }
+      ptr.x = e.clientX; ptr.y = e.clientY;
+    }, { passive: true });
+    window.addEventListener('pointerdown', function (e) {
+      ripples.push({ x: e.clientX, y: e.clientY, r: 0, a: 1 });
+    }, { passive: true });
+    document.documentElement.addEventListener('pointerleave', function () { ptr.x = ptr.y = -9999; eased.x = eased.y = -9999; });
+  }
+  size();
+  if (!still) requestAnimationFrame(loop);
+})();
+</script>
 <script>
 (function () {
   'use strict';
@@ -693,7 +803,6 @@ body.is-inside .vignette { opacity: 1; }
     scene.add(fill);
 
     buildBall();
-    buildField();
 
     // Reading light: a warm spot thrown from behind the viewer onto the inner
     // wall where the content panel sits, so the content has a lit pool behind
@@ -711,64 +820,7 @@ body.is-inside .vignette { opacity: 1; }
   }
 
   var ORIGIN = new THREE.Vector3(0, 0, 0);
-  var CAM_DIR = new THREE.Vector3(0, 0.3, 1).normalize();
-
-  // A night pitch: mowing stripes and white markings painted on a canvas,
-  // fading into the page colour at the horizon. The ball rests on the
-  // centre spot.
-  function buildField() {
-    var SIZE = 90, PX = 2048, s = PX / SIZE;
-    var c = document.createElement('canvas');
-    c.width = c.height = PX;
-    var x = c.getContext('2d');
-    var bands = 18, bh = PX / bands;
-    for (var i = 0; i < bands; i++) {
-      x.fillStyle = i % 2 ? '#1c4519' : '#22521e';
-      x.fillRect(0, i * bh, PX, bh);
-    }
-    var mid = PX / 2;
-    x.strokeStyle = 'rgba(245, 245, 235, 0.92)';
-    x.lineWidth = 0.16 * s;
-    x.beginPath(); x.moveTo(0, mid); x.lineTo(PX, mid); x.stroke();
-    x.beginPath(); x.arc(mid, mid, 7 * s, 0, Math.PI * 2); x.stroke();
-    // penalty areas at either end of the visible pitch
-    x.strokeRect(mid - 16 * s, mid - 34 * s, 32 * s, 13 * s);
-    x.strokeRect(mid - 16 * s, mid + 21 * s, 32 * s, 13 * s);
-    x.beginPath(); x.moveTo(mid - 30 * s, mid - 34 * s); x.lineTo(mid + 30 * s, mid - 34 * s); x.stroke();
-    x.beginPath(); x.moveTo(mid - 30 * s, mid + 34 * s); x.lineTo(mid + 30 * s, mid + 34 * s); x.stroke();
-    x.beginPath(); x.moveTo(mid - 30 * s, mid - 34 * s); x.lineTo(mid - 30 * s, mid + 34 * s); x.stroke();
-    x.beginPath(); x.moveTo(mid + 30 * s, mid - 34 * s); x.lineTo(mid + 30 * s, mid + 34 * s); x.stroke();
-
-    var tex = new THREE.CanvasTexture(c);
-    tex.encoding = THREE.sRGBEncoding;
-    tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
-    var field = new THREE.Mesh(
-      new THREE.PlaneGeometry(SIZE, SIZE),
-      new THREE.MeshStandardMaterial({ map: tex, roughness: 0.95, metalness: 0, envMapIntensity: 0.25 })
-    );
-    field.rotation.x = -Math.PI / 2;
-    field.position.y = -R - 0.01;
-    scene.add(field);
-
-    // soft contact shadow under the ball
-    var sc = document.createElement('canvas');
-    sc.width = sc.height = 128;
-    var sx = sc.getContext('2d');
-    var g = sx.createRadialGradient(64, 64, 0, 64, 64, 64);
-    g.addColorStop(0, 'rgba(0,0,0,0.75)');
-    g.addColorStop(0.45, 'rgba(0,0,0,0.35)');
-    g.addColorStop(1, 'rgba(0,0,0,0)');
-    sx.fillStyle = g; sx.fillRect(0, 0, 128, 128);
-    var shadow = new THREE.Mesh(
-      new THREE.PlaneGeometry(4.4, 4.4),
-      new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(sc), transparent: true, depthWrite: false })
-    );
-    shadow.rotation.x = -Math.PI / 2;
-    shadow.position.y = -R;
-    scene.add(shadow);
-
-    scene.fog = new THREE.Fog(0x0C0E12, 7, 28);
-  }
+  var CAM_DIR = new THREE.Vector3(0, 0, 1);
 
   function buildBall() {
     var solid = buildSolid();
@@ -994,7 +1046,6 @@ body.is-inside .vignette { opacity: 1; }
     // pixels, not focal*R/d — the flat approximation renders it oversized
     var rPx = Math.max(box, 1) / 2;
     var d = Math.sqrt(Math.pow(focal * R / rPx, 2) + R * R);
-    // seen from a little above, so the pitch runs back to the horizon
     idleCam.copy(CAM_DIR).multiplyScalar(d);
   }
 
