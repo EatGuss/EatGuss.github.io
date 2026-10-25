@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="Egus Lee — Applied AI and Analytics student at Nanyang Polytechnic, expected 2028. Projects, skills and contact, behind the panels of a football.">
+<meta name="description" content="Egus Lee, Applied AI and Analytics student at Nanyang Polytechnic, expected 2028. Projects, skills and contact, behind the panels of a football.">
 <meta property="og:title" content="Egus Lee">
 <meta property="og:description" content="Applied AI and Analytics student at Nanyang Polytechnic. Open to internships in data analytics, machine learning or software engineering.">
 <meta property="og:type" content="website">
 <meta name="theme-color" content="#0C0E12">
 <style>
-  /* Base reset — the artifact host supplied this; a standalone page needs it. */
+  /* Base reset: the artifact host supplied this; a standalone page needs it. */
   :root {
     padding-top: env(safe-area-inset-top, 0px);
     padding-bottom: env(safe-area-inset-bottom, 0px);
@@ -613,7 +613,7 @@ body.is-inside .vignette { opacity: 1; }
     {
       id: 'about', label: 'About', face: 'ABOUT', kicker: 'Who',
       heading: 'Applied AI and Analytics student',
-      intro: 'Project experience across the <b>full data pipeline</b> — cleaning, feature engineering, statistical analysis and model evaluation — alongside <b>full-stack delivery</b> in Python, TypeScript and SQL. Seeking <b>internships</b> in data analytics, machine learning or software engineering.',
+      intro: 'Project experience across the <b>full data pipeline</b> (cleaning, feature engineering, statistical analysis and model evaluation) alongside <b>full-stack delivery</b> in Python, TypeScript and SQL. Seeking <b>internships</b> in data analytics, machine learning or software engineering.',
       entries: [
         { lead: true, title: 'Project Lead, SGX Equity Stock Screener', meta: '2026 &middot; 4-person team', body: 'Ran meetings, set the <b>repository conventions</b> the team worked to, and defined the <b>submission structure</b> for a graded full-stack build.' },
         { title: 'Class Representative and Class Leader', meta: 'Year 2 Semester 1, 2026', body: 'Planning and running class bonding sessions for the cohort.' },
@@ -631,7 +631,7 @@ body.is-inside .vignette { opacity: 1; }
           meta: 'Project Lead and Full-Stack Developer &middot; May 2026 – Oct 2026',
           repo: 'github.com/EatGuss/sgx-screener',
           repoHref: 'https://github.com/EatGuss/sgx-screener',
-          body: '<b>Led a <b class="n">4-person</b> team</b> through a graded full-stack build, resolving merge conflicts across <b class="n">4</b> feature branches, and <b>owned the screener end to end</b> inside a TypeScript monorepo — ingestion, query compilation and interface. Designed a <b>Filter DSL</b> the language model emits in place of raw SQL, compiled server side into <b>parameterized SQL</b> against a <b>read-only database</b> so generated queries never reach the database directly. Separated a <b>nightly ingestion job</b> from request-time reads, keeping page loads independent of upstream fetches. Expanded the verified universe from <b class="n">57 to 179</b> SGD-denominated SGX stocks above S$300M market capitalisation, after a <b>coverage study</b> of <b class="n">616</b> listed securities showed fundamentals completeness falling from <b class="n">96%</b> for large caps to <b class="n">31%</b> for nano caps. Delivered roughly <b class="n">30</b> filter fields and <b class="n">12</b> presets behind a TradingView-inspired React interface, and covered the filter pipeline with <b class="n">15</b> Vitest unit test files.',
+          body: '<b>Led a <b class="n">4-person</b> team</b> through a graded full-stack build, resolving merge conflicts across <b class="n">4</b> feature branches, and <b>owned the screener end to end</b> inside a TypeScript monorepo, covering ingestion, query compilation and interface. Designed a <b>Filter DSL</b> the language model emits in place of raw SQL, compiled server side into <b>parameterized SQL</b> against a <b>read-only database</b> so generated queries never reach the database directly. Separated a <b>nightly ingestion job</b> from request-time reads, keeping page loads independent of upstream fetches. Expanded the verified universe from <b class="n">57 to 179</b> SGD-denominated SGX stocks above S$300M market capitalisation, after a <b>coverage study</b> of <b class="n">616</b> listed securities showed fundamentals completeness falling from <b class="n">96%</b> for large caps to <b class="n">31%</b> for nano caps. Delivered roughly <b class="n">30</b> filter fields and <b class="n">12</b> presets behind a TradingView-inspired React interface, and covered the filter pipeline with <b class="n">15</b> Vitest unit test files.',
           chips: ['TypeScript', 'Node.js', 'React', 'Vite', 'Vitest', 'shadcn/ui', 'Drizzle', 'Sequelize', 'SQL', 'Tiptap']
         },
         {
@@ -1111,7 +1111,7 @@ body.is-inside .vignette { opacity: 1; }
     ballGroup.add(base);
 
     // Rotating the ball by this quaternion brings the panel square to the
-    // camera — normal toward the viewer AND the hinge edge level, so the
+    // camera: normal toward the viewer AND the hinge edge level, so the
     // printed name sits upright rather than at whatever roll the hinge had.
     var alignQuat = new THREE.Quaternion().setFromRotationMatrix(basis).invert();
 
@@ -1130,7 +1130,7 @@ body.is-inside .vignette { opacity: 1; }
     var focal = (ch / 2) / Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2);
     var box = Math.min(cw, ch) * 0.72;
     // a sphere of radius R at distance d projects to focal*R/sqrt(d^2-R^2)
-    // pixels, not focal*R/d — the flat approximation renders it oversized
+    // pixels, not focal*R/d; the flat approximation renders it oversized
     var rPx = Math.max(box, 1) / 2;
     var d = Math.sqrt(Math.pow(focal * R / rPx, 2) + R * R);
     idleCam.copy(CAM_DIR).multiplyScalar(d);
@@ -1142,7 +1142,7 @@ body.is-inside .vignette { opacity: 1; }
   var rafId = null, pendingPick = false, lastFrame = 0;
 
   // Idle drift: slow, on a tilted axis so it does not read as a turntable.
-  // It stops the moment anything else owns the ball — a drag, a hover on a
+  // It stops the moment anything else owns the ball: a drag, a hover on a
   // panel, a rotate-to tween, or being inside.
   var SPIN_AXIS = new THREE.Vector3(0.16, 1, 0.07).normalize();
   var SPIN_RATE = 0.11;   // radians per second, about 57s a revolution
@@ -1264,7 +1264,7 @@ body.is-inside .vignette { opacity: 1; }
       if (current !== panel) return;
       inside = true;
       document.body.classList.add('is-inside');
-      setHint('Inside the ball — pick another section, or press Esc');
+      setHint('Inside the ball · pick another section, or press Esc');
       lightsTo(INSIDE_LIGHT, 560);
       flyTo(INSIDE.clone(), 620, ease.inCubic, function () {
         if (current !== panel) return;
@@ -1362,7 +1362,7 @@ body.is-inside .vignette { opacity: 1; }
       if (hovered !== current) swing(hovered, 0.1, 120);
     }
     canvas.classList.toggle('over-panel', !!panel);
-    if (!inside) setHint(panel ? panel.section.label + ' — click to open' : 'Drag to spin · click a gold panel');
+    if (!inside) setHint(panel ? panel.section.label + ' · click to open' : 'Drag to spin · click a gold panel');
     requestRender();
   }
 
@@ -1549,12 +1549,12 @@ body.is-inside .vignette { opacity: 1; }
    * 11. Boot
    * ------------------------------------------------------------------ */
   function boot() {
-    if (!window.THREE) { setHint('Use the section bar — 3D unavailable'); return; }
+    if (!window.THREE) { setHint('Use the section bar · 3D unavailable'); return; }
     try { initScene(); }
     catch (err) {
       renderer = null;
       document.querySelector('.ball-layer').hidden = true;
-      setHint('Use the section bar — 3D unavailable');
+      setHint('Use the section bar · 3D unavailable');
       return;
     }
     if (window.ResizeObserver) new ResizeObserver(resize).observe(canvas);

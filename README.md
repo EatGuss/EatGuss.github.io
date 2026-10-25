@@ -1,6 +1,6 @@
 # Portfolio
 
-Personal portfolio site. Navigation is a 3D football — each gold-edged
+Personal portfolio site. Navigation is a 3D football: each gold-edged
 pentagon is a section; clicking one swings the panel open and moves the
 camera inside the ball, where the content sits.
 
