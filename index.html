@@ -257,6 +257,9 @@ body.is-inside .vignette { opacity: 1; }
   font-variant-numeric: tabular-nums;
 }
 .entry-body { font-size: 14.5px; color: var(--muted); max-width: 62ch; }
+/* highlighted words: key phrases in full white, figures in gold */
+.card b { color: var(--fg); font-weight: 650; }
+.card b.n { color: var(--gold); font-variant-numeric: tabular-nums; }
 .repo-link { color: var(--gold); text-decoration: none; border-bottom: 1px solid var(--gold-dim); }
 .repo-link:hover { text-shadow: 0 0 12px var(--gold-glow); }
 
@@ -597,9 +600,9 @@ body.is-inside .vignette { opacity: 1; }
     {
       id: 'about', label: 'About', face: 'ABOUT', kicker: 'Who',
       heading: 'Applied AI and Analytics student',
-      intro: 'Project experience across the full data pipeline — cleaning, feature engineering, statistical analysis and model evaluation — alongside full-stack delivery in Python, TypeScript and SQL. Seeking internships in data analytics, machine learning or software engineering.',
+      intro: 'Project experience across the <b>full data pipeline</b> — cleaning, feature engineering, statistical analysis and model evaluation — alongside <b>full-stack delivery</b> in Python, TypeScript and SQL. Seeking <b>internships</b> in data analytics, machine learning or software engineering.',
       entries: [
-        { lead: true, title: 'Project Lead, SGX Equity Stock Screener', meta: '2026 &middot; 4-person team', body: 'Ran meetings, set the repository conventions the team worked to, and defined the submission structure for a graded full-stack build.' },
+        { lead: true, title: 'Project Lead, SGX Equity Stock Screener', meta: '2026 &middot; 4-person team', body: 'Ran meetings, set the <b>repository conventions</b> the team worked to, and defined the <b>submission structure</b> for a graded full-stack build.' },
         { title: 'Class Representative and Class Leader', meta: 'Year 2 Semester 1, 2026', body: 'Planning and running class bonding sessions for the cohort.' },
         { title: 'Member, School of Information Technology Club', meta: 'Nanyang Polytechnic' }
       ]
@@ -615,13 +618,13 @@ body.is-inside .vignette { opacity: 1; }
           meta: 'Project Lead and Full-Stack Developer &middot; May 2026 – Oct 2026',
           repo: 'github.com/EatGuss/sgx-screener',
           repoHref: 'https://github.com/EatGuss/sgx-screener',
-          body: 'Led a 4-person team through a graded full-stack build, resolving merge conflicts across 4 feature branches, and owned the screener end to end inside a TypeScript monorepo — ingestion, query compilation and interface. Designed a Filter DSL the language model emits in place of raw SQL, compiled server side into parameterized SQL against a read-only database so generated queries never reach the database directly. Separated a nightly ingestion job from request-time reads, keeping page loads independent of upstream fetches. Expanded the verified universe from 57 to 179 SGD-denominated SGX stocks above S$300M market capitalisation, after a coverage study of 616 listed securities showed fundamentals completeness falling from 96% for large caps to 31% for nano caps. Delivered roughly 30 filter fields and 12 presets behind a TradingView-inspired React interface, and covered the filter pipeline with 15 Vitest unit test files.',
+          body: '<b>Led a <b class="n">4-person</b> team</b> through a graded full-stack build, resolving merge conflicts across <b class="n">4</b> feature branches, and <b>owned the screener end to end</b> inside a TypeScript monorepo — ingestion, query compilation and interface. Designed a <b>Filter DSL</b> the language model emits in place of raw SQL, compiled server side into <b>parameterized SQL</b> against a <b>read-only database</b> so generated queries never reach the database directly. Separated a <b>nightly ingestion job</b> from request-time reads, keeping page loads independent of upstream fetches. Expanded the verified universe from <b class="n">57 to 179</b> SGD-denominated SGX stocks above S$300M market capitalisation, after a <b>coverage study</b> of <b class="n">616</b> listed securities showed fundamentals completeness falling from <b class="n">96%</b> for large caps to <b class="n">31%</b> for nano caps. Delivered roughly <b class="n">30</b> filter fields and <b class="n">12</b> presets behind a TradingView-inspired React interface, and covered the filter pipeline with <b class="n">15</b> Vitest unit test files.',
           chips: ['TypeScript', 'Node.js', 'React', 'Vite', 'Vitest', 'shadcn/ui', 'Drizzle', 'Sequelize', 'SQL', 'Tiptap']
         },
         {
           title: 'Calories Burned Prediction Model',
           meta: 'Individual assignment, IT2214 &middot; Aug 2026',
-          body: 'Predicted calories burned by gym members from 15 exercise and demographic variables, owning the pipeline from data preparation through model selection. Identified that the 4,865-row dataset was exactly 5 times replicated and modelled the 973 distinct records instead, preventing identical rows from landing in both training and validation partitions. Dropped BMI after confirming it was a deterministic function of weight and height. Compared Linear Regression, Decision Tree and Gradient Boosting in SAS Viya on a 60/40 partition, selecting Gradient Boosting on a validation ASE of 919 against 1,726 and 7,248.',
+          body: 'Predicted calories burned by gym members from <b class="n">15</b> exercise and demographic variables, owning the pipeline from data preparation through model selection. <b>Identified</b> that the <b class="n">4,865</b>-row dataset was <b>exactly <b class="n">5</b> times replicated</b> and modelled the <b class="n">973</b> distinct records instead, preventing identical rows from landing in both training and validation partitions. Dropped <b>BMI</b> after confirming it was a deterministic function of weight and height. Compared Linear Regression, Decision Tree and Gradient Boosting in SAS Viya on a 60/40 partition, selecting <b>Gradient Boosting</b> on a validation ASE of <b class="n">919</b> against <b class="n">1,726</b> and <b class="n">7,248</b>.',
           chips: ['Python', 'pandas', 'NumPy', 'Jupyter', 'SAS Viya']
         },
         {
@@ -629,13 +632,13 @@ body.is-inside .vignette { opacity: 1; }
           meta: 'Solo Developer &middot; DFL x Adidas x Slalom Fan Squad Hackathon &middot; May 2026',
           repo: 'github.com/EatGuss/PitchPulse',
           repoHref: 'https://github.com/EatGuss/PitchPulse',
-          body: 'A real-time Bundesliga matchday companion offering timed in-match predictions alongside Ranked and Watch Room modes. Architected an event-driven serverless backend on AWS using AppSync subscriptions, Lambda, DynamoDB, Cognito and EventBridge, with static delivery through S3 and CloudFront. Produced the executive summary deck and demo video script for submission.',
+          body: 'A <b>real-time Bundesliga matchday companion</b> offering timed in-match predictions alongside Ranked and Watch Room modes. <b>Architected an event-driven serverless backend</b> on AWS using AppSync subscriptions, Lambda, DynamoDB, Cognito and EventBridge, with static delivery through S3 and CloudFront. Produced the <b>executive summary deck</b> and <b>demo video script</b> for submission.',
           chips: ['AWS AppSync', 'Lambda', 'DynamoDB', 'Cognito', 'EventBridge', 'S3', 'CloudFront']
         },
         {
           title: 'Data Wrangling Project',
           meta: 'Individual assignment, IT2212 &middot; Jul 2026',
-          body: 'Merged 4 regional Excel datasets and resolved 7 categories of data quality issues, including sentinel values, century-rollover birthdates, duplicates and structural inconsistencies. Pseudonymised customer records and derived new analytical columns. Found purchase frequency correlated with spending at r = 0.97 against r = -0.03 for income, redirecting the customer segmentation recommendation away from income tiers. Delivered a reproducible KNIME workflow, a cleaned dataset and a written report.',
+          body: 'Merged <b class="n">4</b> regional Excel datasets and resolved <b class="n">7</b> categories of <b>data quality issues</b>, including sentinel values, century-rollover birthdates, duplicates and structural inconsistencies. <b>Pseudonymised</b> customer records and derived new analytical columns. Found <b>purchase frequency</b> correlated with spending at <b class="n">r = 0.97</b> against <b class="n">r = -0.03</b> for income, <b>redirecting the customer segmentation recommendation</b> away from income tiers. Delivered a <b>reproducible KNIME workflow</b>, a cleaned dataset and a written report.',
           chips: ['KNIME', 'Python', 'Excel']
         }
       ]
@@ -656,7 +659,7 @@ body.is-inside .vignette { opacity: 1; }
     {
       id: 'education', label: 'Education', face: 'STUDY', kicker: 'Study',
       heading: 'Nanyang Polytechnic',
-      intro: 'Diploma in Applied AI and Analytics, expected 2028.',
+      intro: '<b>Diploma in Applied AI and Analytics</b>, expected <b class="n">2028</b>.',
       entries: [
         { lead: true, title: 'Relevant coursework', meta: 'School of Information Technology', body: 'Predictive Analysis and Forecasting, Data Wrangling, Responsible AI for Sustainability, IT Governance, Data Structures and Algorithms, Frontend Development.' }
       ]
@@ -675,7 +678,7 @@ body.is-inside .vignette { opacity: 1; }
     {
       id: 'contact', label: 'Contact', face: 'CONTACT', kicker: 'Reach me',
       heading: 'Get in touch',
-      intro: 'Open to internships in data analytics, machine learning or software engineering.',
+      intro: 'Open to <b>internships</b> in <b>data analytics</b>, <b>machine learning</b> or <b>software engineering</b>.',
       contacts: [
         { label: 'Email', value: 'eguslee@gmail.com', copy: true },
         { label: 'Phone', value: '+65 8168 9663', copy: true },
