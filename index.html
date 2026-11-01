@@ -526,6 +526,7 @@ body.is-inside .vignette { opacity: 1; }
     ctx.fillRect(0, 0, w, h);
 
     var time = t / 1000, ease = still ? 1 : Math.min(1, dt * 7);
+    var wind = window.ballWind || { x: 1, y: 0 };
     ctx.lineCap = 'round';
     for (var s = 0; s < SHADES.length; s++) {
       var list = order[s];
@@ -534,12 +535,16 @@ body.is-inside .vignette { opacity: 1; }
       ctx.beginPath();
       for (var j = 0; j < list.length; j++) {
         var i = list[j], x = bx[i], y = by[i];
-        // wind blows left to right in broad waves, with a little cross-draft
+        // the wind always blows the way the ball's face is turning, in
+        // waves that roll along that direction, with a flutter across it
         var tx = ox[i], ty = oy[i];
         if (!still) {
-          var wave = Math.sin(time * 1.1 - x * 0.006 + y * 0.002);
-          tx += 0.3 + 0.35 * wave + 0.08 * Math.sin(time * 3 + i);
-          ty += 0.12 * Math.sin(time * 0.8 + x * 0.004 - y * 0.009);
+          var along = x * wind.x + y * wind.y;
+          var wave = Math.sin(time * 1.8 - along * 0.007);
+          var push = 0.55 + 0.45 * wave;
+          var flutter = 0.12 * Math.sin(time * 3.4 + i);
+          tx += wind.x * push - wind.y * flutter;
+          ty += wind.y * push + wind.x * flutter;
         }
         for (var g = 0; g < gusts.length; g++) {
           var gx = x - gusts[g].x, gy = y - gusts[g].y;
@@ -1148,6 +1153,32 @@ body.is-inside .vignette { opacity: 1; }
   var SPIN_RATE = 0.11;   // radians per second, about 57s a revolution
   var spinQ = new THREE.Quaternion();
 
+  // Which way the ball's front face is moving on screen, shared with the
+  // grass so the wind follows the spin. It keeps its last heading while the
+  // ball is still, so the grass never stops moving.
+  window.ballWind = { x: 1, y: 0 };
+  var prevQ = new THREE.Quaternion(), stepQ = new THREE.Quaternion(), hasPrev = false;
+  function trackWind(dt) {
+    var q = ballGroup.quaternion;
+    if (hasPrev && dt > 0) {
+      stepQ.copy(prevQ).invert().premultiply(q);
+      if (stepQ.w < 0) { stepQ.x = -stepQ.x; stepQ.y = -stepQ.y; stepQ.z = -stepQ.z; stepQ.w = -stepQ.w; }
+      // for a small turn the vector part is half the rotation vector; the
+      // front point (0, 0, R) then moves right by its y part, down by its x
+      var vx = stepQ.y, vy = stepQ.x;
+      var m = Math.sqrt(vx * vx + vy * vy);
+      if (m / dt > 0.01) {
+        var k = Math.min(1, dt * 3), wd = window.ballWind;
+        wd.x += (vx / m - wd.x) * k;
+        wd.y += (vy / m - wd.y) * k;
+        var n = Math.sqrt(wd.x * wd.x + wd.y * wd.y) || 1;
+        wd.x /= n; wd.y /= n;
+      }
+    }
+    prevQ.copy(q);
+    hasPrev = true;
+  }
+
   function requestRender() { if (rafId === null) rafId = requestAnimationFrame(frame); }
 
   function autoSpinning() {
@@ -1171,6 +1202,7 @@ body.is-inside .vignette { opacity: 1; }
     camera.lookAt(ORIGIN);
     camera.updateMatrixWorld();
     if (pendingPick) { pendingPick = false; doHoverPick(); }
+    trackWind(dt);
     renderer.render(scene, camera);
     if (busy) requestRender();
   }
